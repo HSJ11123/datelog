@@ -96,6 +96,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .pick{display:flex;gap:8px}
 .pick button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--sub);border-radius:12px;padding:11px 0;font:inherit;font-size:15px;cursor:pointer}
 .pick button.on{border-color:var(--accent);color:var(--text);background:rgba(255,92,138,.14)}
+.checks{display:flex;gap:10px;margin-bottom:12px}
+.ck{flex:1;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:16px;cursor:pointer}
+.ck input{-webkit-appearance:none;appearance:none;width:22px;height:22px;padding:0;margin:0;border:2px solid var(--sub);border-radius:6px;background:transparent;flex-shrink:0;display:grid;place-content:center}
+.ck input:checked{background:var(--accent);border-color:var(--accent)}
+.ck input:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.ck:has(input:checked){border-color:var(--accent)}
 .meet{background:var(--card);box-shadow:var(--shadow);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer}
 .meet .h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .meet .d{font-weight:700;font-size:16px}
@@ -317,6 +323,10 @@ async function renderForm(id){
       <div class="field"><label>體重</label><div class="unit"><input name="weight" type="number" inputmode="decimal" value="${esc(p.weight)}"><span>kg</span></div></div>
       <div class="field"><label>罩杯</label><select name="cup">${CUPS.map(c => `<option value="${c}" ${p.cup === c ? 'selected' : ''}>${c || '—'}</option>`).join('')}</select></div>
     </div>
+    <div class="checks">
+      <label class="ck"><input type="checkbox" name="natural" ${p.natural ? 'checked' : ''}><span>天然</span></label>
+      <label class="ck"><input type="checkbox" name="kg" ${p.kg ? 'checked' : ''}><span>kg</span></label>
+    </div>
     <button class="btn" type="submit">儲存</button>
     ${id ? `<button class="btn danger" type="button" id="delP">刪除此對象（含見面紀錄與照片）</button>` : ''}
     <datalist id="nations">${NATIONS.map(n => `<option value="${n}">`).join('')}</datalist>
@@ -326,7 +336,7 @@ async function renderForm(id){
     e && e.preventDefault();
     const fd = Object.fromEntries(new FormData(f));
     if(!fd.nickname.trim()){ toast('請填寫暱稱'); f.nickname.focus(); return; }
-    const rec = { ...p, ...fd, nickname: fd.nickname.trim(), id: p.id || uid(), createdAt: p.createdAt || Date.now(), updatedAt: Date.now() };
+    const rec = { ...p, ...fd, natural: f.natural.checked, kg: f.kg.checked, nickname: fd.nickname.trim(), id: p.id || uid(), createdAt: p.createdAt || Date.now(), updatedAt: Date.now() };
     await put('people', rec);
     navigator.storage?.persist?.();
     toast('已儲存');
@@ -353,7 +363,7 @@ async function renderDetail(id){
   meetings.sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.createdAt - a.createdAt);
   photos.sort((a, b) => b.createdAt - a.createdAt);
   const cover = photos.find(x => x.id === p.coverId) || photos[photos.length - 1];
-  const l1 = [p.age && p.age + '歲', p.height && p.height + 'cm', p.weight && p.weight + 'kg', p.cup && p.cup + ' 罩杯'].filter(Boolean).join(' · ');
+  const l1 = [p.age && p.age + '歲', p.height && p.height + 'cm', p.weight && p.weight + 'kg', p.cup && p.cup + ' 罩杯', p.natural && '天然', p.kg && 'kg'].filter(Boolean).join(' · ');
   const l2 = [p.location && '📍' + p.location, p.nationality].filter(Boolean).join(' · ');
   const lastM = meetings[0];
   const scrollY = window.scrollY;
@@ -386,7 +396,7 @@ const refresh = () => renderDetail(curPid);
 const TABS = {
   info({ p }){
     const rows = [['暱稱', p.nickname], ['地點', p.location], ['日期', p.metDate && `${fmtDate(p.metDate)}（${daysAgo(p.metDate)}）`], ['年齡', p.age && p.age + ' 歲'],
-      ['身高', p.height && p.height + ' cm'], ['體重', p.weight && p.weight + ' kg'], ['罩杯', p.cup], ['國籍', p.nationality]];
+      ['身高', p.height && p.height + ' cm'], ['體重', p.weight && p.weight + ' kg'], ['罩杯', p.cup], ['天然', p.natural ? '✓' : ''], ['kg', p.kg ? '✓' : ''], ['國籍', p.nationality]];
     $('#tab').innerHTML = `
       <div class="panel">${rows.map(([k, v]) => `<div class="row"><span class="k">${k}</span><span class="v">${v ? esc(v) : '<span style="color:var(--ph-t)">—</span>'}</span></div>`).join('')}</div>
       <a class="btn ghost" href="#/p/${p.id}/edit">✎ 編輯基本資料</a>`;
@@ -584,7 +594,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v11</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v12</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
