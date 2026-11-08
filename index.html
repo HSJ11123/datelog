@@ -278,15 +278,13 @@ async function renderList(){
     if(!arr.length){ g.innerHTML = `<div class="empty" style="grid-column:1/-1">找不到符合的紀錄</div>`; return; }
     g.innerHTML = arr.map(p => {
       const ph = photoById[p.coverId] || firstPhoto[p.id];
-      const intent = p.review?.intent;
       const sub = [p.age && p.age + '歲', p.height && p.height + 'cm', p.cup && p.cup].filter(Boolean).join(' · ');
       return `<a class="card" href="#/p/${p.id}">
-        <div class="cover" style="${ph ? `background-image:url(${objURL(ph.thumb || ph.blob)})` : ''}">${ph ? '' : esc((p.nickname || '?').slice(0, 1))}
-          ${intent ? `<span class="badge ${intent}">${INTENT[intent]}</span>` : ''}</div>
+        <div class="cover" style="${ph ? `background-image:url(${objURL(ph.thumb || ph.blob)})` : ''}">${ph ? '' : esc((p.nickname || '?').slice(0, 1))}</div>
         <div class="cinfo">
           <div class="cname">${esc(p.nickname)}<small>${esc(sub)}</small></div>
           <div class="cmeta">📍${esc([p.location, p.nationality].filter(Boolean).join(' · ') || '—')}</div>
-          <div class="cmeta">${starsView(p.review?.overall)} · 見面 ${cnt[p.id] || 0} 次</div>
+          <div class="cmeta">${starsView(p.review?.overall)}</div>
         </div></a>`;
     }).join('');
   };
