@@ -412,7 +412,8 @@ const TABS = {
     $('#tab').innerHTML = `<button class="btn" id="addM" style="margin:0 0 14px">＋ 新增見面紀錄</button>
       ${meetings.length ? meetings.map((m, i) => `<div class="meet" data-id="${m.id}">
         <div class="h"><span class="d"><span class="no">#${meetings.length - i}</span>${fmtDate(m.date)}${m.time ? ' ' + esc(m.time) : ''}</span>
-        <span class="p" style="margin:0">${m.cost ? '💰 $' + esc(Number(m.cost).toLocaleString()) : ''}</span></div></div>`).join('')
+        <span class="p" style="margin:0">${m.cost ? '💰 $' + esc(Number(m.cost).toLocaleString()) : ''}</span></div>
+        ${m.hours || m.times ? `<div class="p">${[m.hours && '⏱ 鐘點 ' + esc(m.hours) + ' 小時', m.times && '🔁 ' + esc(m.times) + ' 次'].filter(Boolean).join('　')}</div>` : ''}</div>`).join('')
       : `<div class="empty" style="padding-top:30px"><div class="big">☕️</div>還沒有見面紀錄</div>`}`;
     $('#addM').onclick = () => meetSheet(p, null);
     $$('.meet').forEach(el => el.onclick = () => meetSheet(p, meetings.find(m => m.id === el.dataset.id)));
@@ -474,12 +475,17 @@ function meetSheet(p, m){
       <div class="field"><label>日期</label><input type="date" id="mdate" value="${esc(m.date)}"></div>
       <div class="field"><label>時間</label><input type="time" id="mtime" value="${esc(m.time)}"></div>
     </div>
+    <div class="two">
+      <div class="field"><label>鐘點</label><div class="unit"><input id="mhours" type="number" inputmode="decimal" step="0.5" min="0" value="${esc(m.hours)}"><span>小時</span></div></div>
+      <div class="field"><label>次數</label><div class="unit"><input id="mtimes" type="number" inputmode="numeric" min="0" value="${esc(m.times)}"><span>次</span></div></div>
+    </div>
     <div class="field"><label>花費</label><div class="unit"><input id="mcost" type="number" inputmode="numeric" value="${esc(m.cost)}"><span>元</span></div></div>
     <button class="btn" id="saveM">儲存</button>
     ${isNew ? '' : '<button class="btn danger" id="delM">刪除這筆紀錄</button>'}`, s => {
     $('#saveM', s).onclick = async () => {
       const rec = { ...m, id: m.id || uid(), personId: p.id, createdAt: m.createdAt || Date.now(),
-        date: $('#mdate', s).value || today(), time: $('#mtime', s).value, cost: $('#mcost', s).value };
+        date: $('#mdate', s).value || today(), time: $('#mtime', s).value,
+        hours: $('#mhours', s).value, times: $('#mtimes', s).value, cost: $('#mcost', s).value };
       await put('meetings', rec); closeSheet(); toast('已儲存'); curTab = 'meet'; refresh();
     };
     if(!isNew) $('#delM', s).onclick = async () => {
