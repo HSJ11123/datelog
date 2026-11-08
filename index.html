@@ -252,8 +252,6 @@ async function renderList(){
   <div class="wrap">
     <div class="stats">
       <div><b>${people.length}</b><span>人數</span></div>
-      <div><b>${meetings.length}</b><span>見面次數</span></div>
-      <div><b>${people.filter(p => p.review?.intent === 'yes').length}</b><span>想再約</span></div>
     </div>
     <div class="search">
       <input id="q" type="search" placeholder="搜尋暱稱、地點、國籍、標籤…" value="${esc(listState.q)}">
