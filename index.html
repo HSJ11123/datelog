@@ -300,7 +300,7 @@ async function renderList(){
 }
 
 /* ---------- person form ---------- */
-const NATIONS = ['台灣','日本','韓國','中國','香港','澳門','泰國','越南','菲律賓','馬來西亞','新加坡','印尼','美國','加拿大','英國','法國','俄羅斯','烏克蘭','巴西'];
+const NATIONS = ['台灣','泰國','越南','印尼','大陸','港澳','俄羅斯','日本','韓國'];
 const CUPS = ['','A','B','C','D','E','F','G','H','I+'];
 async function renderForm(id){
   const p = id ? await get('people', id) : { metDate: today() };
@@ -316,7 +316,10 @@ async function renderForm(id){
     </div>
     <div class="two">
       <div class="field"><label>年齡</label><div class="unit"><input name="age" type="number" inputmode="numeric" value="${esc(p.age)}"><span>歲</span></div></div>
-      <div class="field"><label>國籍</label><input name="nationality" list="nations" value="${esc(p.nationality)}" placeholder="台灣"></div>
+      <div class="field"><label>國籍</label><select name="nationality">
+        ${['', ...NATIONS, ...(p.nationality && !NATIONS.includes(p.nationality) ? [p.nationality] : [])]
+          .map(n => `<option value="${esc(n)}" ${(p.nationality || '') === n ? 'selected' : ''}>${esc(n) || '—'}</option>`).join('')}
+      </select></div>
     </div>
     <div class="three">
       <div class="field"><label>身高</label><div class="unit"><input name="height" type="number" inputmode="decimal" value="${esc(p.height)}"><span>cm</span></div></div>
@@ -328,9 +331,7 @@ async function renderForm(id){
       <label class="ck"><input type="checkbox" name="kg" ${p.kg ? 'checked' : ''}><span>KG</span></label>
     </div>
     <button class="btn" type="submit">儲存</button>
-    ${id ? `<button class="btn danger" type="button" id="delP">刪除此對象（含見面紀錄與照片）</button>` : ''}
-    <datalist id="nations">${NATIONS.map(n => `<option value="${n}">`).join('')}</datalist>
-  </form>`;
+    ${id ? `<button class="btn danger" type="button" id="delP">刪除此對象（含見面紀錄與照片）</button>` : ''}  </form>`;
   const f = $('#f');
   const save = async e => {
     e && e.preventDefault();
@@ -594,7 +595,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v13</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v14</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
