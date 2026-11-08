@@ -306,7 +306,7 @@ async function renderForm(id){
     <div class="field"><label>暱稱 <em>*</em></label><input name="nickname" required value="${esc(p.nickname)}" placeholder="例如：小美"></div>
     <div class="two">
       <div class="field"><label>地點</label><input name="location" value="${esc(p.location)}" placeholder="台北 / 信義區"></div>
-      <div class="field"><label>認識日期</label><input type="date" name="metDate" value="${esc(p.metDate)}"></div>
+      <div class="field"><label>日期</label><input type="date" name="metDate" value="${esc(p.metDate)}"></div>
     </div>
     <div class="two">
       <div class="field"><label>年齡</label><div class="unit"><input name="age" type="number" inputmode="numeric" value="${esc(p.age)}"><span>歲</span></div></div>
@@ -385,7 +385,7 @@ const refresh = () => renderDetail(curPid);
 
 const TABS = {
   info({ p }){
-    const rows = [['暱稱', p.nickname], ['地點', p.location], ['認識日期', p.metDate && `${fmtDate(p.metDate)}（${daysAgo(p.metDate)}）`], ['年齡', p.age && p.age + ' 歲'],
+    const rows = [['暱稱', p.nickname], ['地點', p.location], ['日期', p.metDate && `${fmtDate(p.metDate)}（${daysAgo(p.metDate)}）`], ['年齡', p.age && p.age + ' 歲'],
       ['身高', p.height && p.height + ' cm'], ['體重', p.weight && p.weight + ' kg'], ['罩杯', p.cup], ['國籍', p.nationality]];
     $('#tab').innerHTML = `
       <div class="panel">${rows.map(([k, v]) => `<div class="row"><span class="k">${k}</span><span class="v">${v ? esc(v) : '<span style="color:var(--ph-t)">—</span>'}</span></div>`).join('')}</div>
@@ -584,7 +584,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v10</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v11</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
