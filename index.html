@@ -325,7 +325,7 @@ async function renderForm(id){
     </div>
     <div class="checks">
       <label class="ck"><input type="checkbox" name="natural" ${p.natural ? 'checked' : ''}><span>天然</span></label>
-      <label class="ck"><input type="checkbox" name="kg" ${p.kg ? 'checked' : ''}><span>kg</span></label>
+      <label class="ck"><input type="checkbox" name="kg" ${p.kg ? 'checked' : ''}><span>KG</span></label>
     </div>
     <button class="btn" type="submit">儲存</button>
     ${id ? `<button class="btn danger" type="button" id="delP">刪除此對象（含見面紀錄與照片）</button>` : ''}
@@ -363,7 +363,7 @@ async function renderDetail(id){
   meetings.sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.createdAt - a.createdAt);
   photos.sort((a, b) => b.createdAt - a.createdAt);
   const cover = photos.find(x => x.id === p.coverId) || photos[photos.length - 1];
-  const l1 = [p.age && p.age + '歲', p.height && p.height + 'cm', p.weight && p.weight + 'kg', p.cup && p.cup + ' 罩杯', p.natural && '天然', p.kg && 'kg'].filter(Boolean).join(' · ');
+  const l1 = [p.age && p.age + '歲', p.height && p.height + 'cm', p.weight && p.weight + 'kg', p.cup && p.cup + ' 罩杯', p.natural && '天然', p.kg && 'KG'].filter(Boolean).join(' · ');
   const l2 = [p.location && '📍' + p.location, p.nationality].filter(Boolean).join(' · ');
   const lastM = meetings[0];
   const scrollY = window.scrollY;
@@ -396,7 +396,7 @@ const refresh = () => renderDetail(curPid);
 const TABS = {
   info({ p }){
     const rows = [['暱稱', p.nickname], ['地點', p.location], ['日期', p.metDate && `${fmtDate(p.metDate)}（${daysAgo(p.metDate)}）`], ['年齡', p.age && p.age + ' 歲'],
-      ['身高', p.height && p.height + ' cm'], ['體重', p.weight && p.weight + ' kg'], ['罩杯', p.cup], ['天然', p.natural ? '✓' : ''], ['kg', p.kg ? '✓' : ''], ['國籍', p.nationality]];
+      ['身高', p.height && p.height + ' cm'], ['體重', p.weight && p.weight + ' kg'], ['罩杯', p.cup], ['天然', p.natural ? '✓' : ''], ['KG', p.kg ? '✓' : ''], ['國籍', p.nationality]];
     $('#tab').innerHTML = `
       <div class="panel">${rows.map(([k, v]) => `<div class="row"><span class="k">${k}</span><span class="v">${v ? esc(v) : '<span style="color:var(--ph-t)">—</span>'}</span></div>`).join('')}</div>
       <a class="btn ghost" href="#/p/${p.id}/edit">✎ 編輯基本資料</a>`;
@@ -594,7 +594,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v12</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v13</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
