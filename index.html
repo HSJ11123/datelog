@@ -124,8 +124,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .viewer .vt,.viewer .vb{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px}
 .viewer .vt{padding-top:calc(env(safe-area-inset-top) + 10px)}
 .viewer .vb{padding-bottom:calc(env(safe-area-inset-bottom) + 12px)}
-.viewer .vi{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;touch-action:pan-y}
-.viewer img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-select:none}
+.viewer .vi{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;touch-action:none;overflow:hidden}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transform-origin:center center;will-change:transform;pointer-events:none}
+.viewer img.anim{transition:transform .22s ease}
 .viewer .cnt{color:#bbb;font-size:14px}
 .toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--toast);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:80;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%)}
@@ -537,7 +538,7 @@ function openViewer(p, list, i){
   const draw = () => {
     if(vURL) URL.revokeObjectURL(vURL);
     const x = vState.list[vState.i]; vURL = URL.createObjectURL(x.blob);
-    $('#vImg').src = vURL; $('#vCnt').textContent = `${vState.i + 1} / ${vState.list.length}`;
+    zoom.reset(false); $('#vImg').src = vURL; $('#vCnt').textContent = `${vState.i + 1} / ${vState.list.length}`;
     $('#vCover').textContent = x.id === vState.p.coverId ? '✓ 封面' : '設為封面';
   };
   const go = d => { vState.i = (vState.i + d + vState.list.length) % vState.list.length; draw(); };
@@ -551,10 +552,89 @@ function openViewer(p, list, i){
     if(!vState.list.length) return closeViewer();
     vState.i = Math.min(vState.i, vState.list.length - 1); draw();
   };
-  let sx = 0; const vi = $('#vi');
-  vi.ontouchstart = e => sx = e.touches[0].clientX;
-  vi.ontouchend = e => { const dx = e.changedTouches[0].clientX - sx; if(Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); };
+  const zoom = makeZoom($('#vi'), $('#vImg'), go);
+  vState.zoom = zoom;
   draw();
+}
+/* 照片縮放：雙指縮放、放大後單指拖曳、點兩下放大/還原；未放大時左右滑切換 */
+function makeZoom(box, img, go){
+  const MAX = 6;
+  let s = 1, x = 0, y = 0;
+  let start = null, lastTap = 0, lastTapPos = null;
+  const center = () => { const r = box.getBoundingClientRect(); return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width, h: r.height }; };
+  const clamp = () => {
+    const c = center();
+    const mx = Math.max(0, (img.offsetWidth * s - c.w) / 2), my = Math.max(0, (img.offsetHeight * s - c.h) / 2);
+    x = Math.min(mx, Math.max(-mx, x)); y = Math.min(my, Math.max(-my, y));
+  };
+  const apply = anim => { img.classList.toggle('anim', !!anim); img.style.transform = `translate(${x}px,${y}px) scale(${s})`; };
+  // 以畫面上某一點 (px,py) 為中心縮放到 ns
+  const zoomAt = (ns, px, py, anim) => {
+    const c = center(); const fx = px - c.cx, fy = py - c.cy;
+    ns = Math.min(MAX, Math.max(1, ns));
+    x = fx - (fx - x) * ns / s; y = fy - (fy - y) * ns / s; s = ns;
+    if(s === 1){ x = 0; y = 0; }
+    clamp(); apply(anim);
+  };
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid = t => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
+
+  box.ontouchstart = e => {
+    e.preventDefault();
+    const t = e.touches;
+    if(t.length === 2){
+      const m = mid(t), c = center();
+      start = { type: 'pinch', d: dist(t), s, fx: m.x - c.cx, fy: m.y - c.cy, x, y };
+    } else if(t.length === 1){
+      start = { type: 'pan', px: t[0].clientX, py: t[0].clientY, x, y, moved: false, time: Date.now() };
+    }
+  };
+  box.ontouchmove = e => {
+    e.preventDefault();
+    const t = e.touches; if(!start) return;
+    if(start.type === 'pinch' && t.length === 2){
+      const m = mid(t), c = center();
+      const ns = Math.min(MAX, Math.max(1, start.s * dist(t) / start.d));
+      // 起始時焦點下的圖片位置，跟著手指移動
+      const px = (start.fx - start.x) / start.s, py = (start.fy - start.y) / start.s;
+      x = (m.x - c.cx) - px * ns; y = (m.y - c.cy) - py * ns; s = ns;
+      clamp(); apply(false);
+    } else if(start.type === 'pan' && t.length === 1){
+      const dx = t[0].clientX - start.px, dy = t[0].clientY - start.py;
+      if(Math.abs(dx) > 6 || Math.abs(dy) > 6) start.moved = true;
+      if(s > 1){ x = start.x + dx; y = start.y + dy; clamp(); apply(false); }
+    }
+  };
+  box.ontouchend = e => {
+    e.preventDefault();
+    if(!start) return;
+    if(start.type === 'pinch'){
+      if(e.touches.length === 1){ // 放開一指，改成拖曳
+        start = { type: 'pan', px: e.touches[0].clientX, py: e.touches[0].clientY, x, y, moved: true, time: Date.now() };
+      } else { if(s < 1.05) zoomAt(1, 0, 0, true); start = null; }
+      return;
+    }
+    if(e.touches.length) return;
+    const ct = e.changedTouches[0], dx = ct.clientX - start.px;
+    if(!start.moved){ // 點一下：判斷是否為點兩下
+      const now = Date.now();
+      if(now - lastTap < 300 && lastTapPos && Math.hypot(ct.clientX - lastTapPos.x, ct.clientY - lastTapPos.y) < 40){
+        s > 1 ? zoomAt(1, 0, 0, true) : zoomAt(2.5, ct.clientX, ct.clientY, true);
+        lastTap = 0;
+      } else { lastTap = now; lastTapPos = { x: ct.clientX, y: ct.clientY }; }
+    } else if(s === 1 && Math.abs(dx) > 50){
+      go(dx < 0 ? 1 : -1);
+    }
+    start = null;
+  };
+  // 電腦：滾輪縮放、雙擊放大
+  box.onwheel = e => { e.preventDefault(); zoomAt(s * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX, e.clientY, false); };
+  box.ondblclick = e => { s > 1 ? zoomAt(1, 0, 0, true) : zoomAt(2.5, e.clientX, e.clientY, true); };
+  let drag = null;
+  box.onmousedown = e => { if(s > 1) drag = { px: e.clientX, py: e.clientY, x, y }; };
+  window.addEventListener('mousemove', e => { if(drag){ x = drag.x + e.clientX - drag.px; y = drag.y + e.clientY - drag.py; clamp(); apply(false); } });
+  window.addEventListener('mouseup', () => drag = null);
+  return { reset(anim){ s = 1; x = 0; y = 0; apply(anim); } };
 }
 function closeViewer(){
   const v = $('#viewer'); if(!v.classList.contains('open')) return;
@@ -595,7 +675,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v14</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v15</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
