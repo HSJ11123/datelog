@@ -1,6 +1,6 @@
 {
-  "name": "交友紀錄",
-  "short_name": "交友紀錄",
+  "name": "Record",
+  "short_name": "Record",
   "description": "私人交友紀錄表：基本資料、評價、見面紀錄、照片",
   "start_url": "./",
   "scope": "./",

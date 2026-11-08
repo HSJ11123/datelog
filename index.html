@@ -5,20 +5,32 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="交友紀錄">
-<meta name="theme-color" content="#121016">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Record">
+<meta name="theme-color" content="#121016" id="themeColor">
+<script>
+// 主題：auto（跟隨系統）/ light / dark，存在本機
+(function(){ let t = 'auto'; try { t = localStorage.getItem('theme') || 'auto'; } catch(e){}
+  if(t !== 'auto') document.documentElement.dataset.theme = t; })();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<title>交友紀錄</title>
+<title>Record</title>
 <style>
-:root{--bg:#121016;--card:#1d1a23;--card2:#28232f;--line:#332e3b;--text:#f3eff6;--sub:#a39cad;--accent:#ff5c8a;--gold:#ffc24b;--danger:#ff6b6b;--ok:#4fd18b;--r:16px;color-scheme:dark}
+/* 淺色 */
+:root{--bg:#f6f4f8;--card:#ffffff;--card2:#efebf3;--line:#e4dfe9;--text:#1f1a26;--sub:#7a7285;--accent:#ff4f80;--gold:#f5a623;--danger:#e5484d;--ok:#2fb36f;
+  --bar:rgba(246,244,248,.86);--ph:#ebe6f0;--ph-t:#b9b0c3;--star-off:#d9d3df;--muted:#3d3546;--danger-line:#f3c9cb;--toast:#2a2431;--chip-on:#d6336c;--shadow:0 1px 3px rgba(40,20,60,.06);--r:16px;color-scheme:light}
+/* 深色 */
+:root[data-theme="dark"]{--bg:#121016;--card:#1d1a23;--card2:#28232f;--line:#332e3b;--text:#f3eff6;--sub:#a39cad;--accent:#ff5c8a;--gold:#ffc24b;--danger:#ff6b6b;--ok:#4fd18b;
+  --bar:rgba(18,16,22,.86);--ph:#2a2531;--ph-t:#5d5568;--star-off:#4a4352;--muted:#ddd6e3;--danger-line:#4a2a2e;--toast:#3a3442;--chip-on:#ffb3c8;--shadow:none;color-scheme:dark}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#121016;--card:#1d1a23;--card2:#28232f;--line:#332e3b;--text:#f3eff6;--sub:#a39cad;--accent:#ff5c8a;--gold:#ffc24b;--danger:#ff6b6b;--ok:#4fd18b;
+  --bar:rgba(18,16,22,.86);--ph:#2a2531;--ph-t:#5d5568;--star-off:#4a4352;--muted:#ddd6e3;--danger-line:#4a2a2e;--toast:#3a3442;--chip-on:#ffb3c8;--shadow:none;color-scheme:dark}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;-webkit-text-size-adjust:100%}
 body{overscroll-behavior-y:none}
 a{color:inherit}
-.top{position:sticky;top:0;z-index:10;background:rgba(18,16,22,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:calc(env(safe-area-inset-top) + 8px) 16px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.top{position:sticky;top:0;z-index:10;background:var(--bar);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:calc(env(safe-area-inset-top) + 8px) 16px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
 .top h1{flex:1;font-size:20px;margin:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ib{background:var(--card2);border:0;color:var(--text);min-width:38px;height:38px;border-radius:12px;font:inherit;font-size:15px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;cursor:pointer;flex-shrink:0}
 .ib.big{font-size:22px;padding:0 10px}
@@ -36,26 +48,26 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .stats b{display:block;font-size:20px}
 .stats span{font-size:12px;color:var(--sub)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.card{background:var(--card);border-radius:var(--r);overflow:hidden;text-decoration:none;display:block}
-.cover{aspect-ratio:3/4;background:#2a2531 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:700;color:#5d5568;position:relative}
+.card{background:var(--card);box-shadow:var(--shadow);border-radius:var(--r);overflow:hidden;text-decoration:none;display:block}
+.cover{aspect-ratio:3/4;background:var(--ph) center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:700;color:var(--ph-t);position:relative}
 .badge{position:absolute;right:8px;top:8px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px}
 .badge.yes{background:rgba(79,209,139,.85);color:#06210f}.badge.maybe{background:rgba(255,194,75,.88);color:#2a1d00}.badge.no{background:rgba(120,110,130,.8)}
 .cinfo{padding:10px 12px 12px}
 .cname{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cname small{font-weight:400;color:var(--sub);font-size:13px;margin-left:4px}
 .cmeta{font-size:12.5px;color:var(--sub);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.st{color:var(--gold);letter-spacing:1px;white-space:nowrap}.st i{font-style:normal;color:#4a4352}
+.st{color:var(--gold);letter-spacing:1px;white-space:nowrap}.st i{font-style:normal;color:var(--star-off)}
 .empty{text-align:center;color:var(--sub);padding:70px 20px;line-height:1.7}
 .empty .big{font-size:52px}
 .hero{display:flex;gap:14px;align-items:center}
-.hero .av{width:92px;height:92px;border-radius:22px;background:#2a2531 center/cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:#5d5568}
+.hero .av{width:92px;height:92px;border-radius:22px;background:var(--ph) center/cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:var(--ph-t)}
 .hero .t{min-width:0;line-height:1.55}
 .hero .t .l1{font-size:15px}
 .hero .t .l2{font-size:13px;color:var(--sub)}
 .seg{display:flex;background:var(--card);border-radius:12px;padding:3px;margin:16px 0 14px}
 .seg button{flex:1;background:none;border:0;color:var(--sub);padding:9px 0;border-radius:10px;font:inherit;font-size:14px;cursor:pointer}
 .seg button.on{background:var(--card2);color:var(--text);font-weight:600}
-.panel{background:var(--card);border-radius:var(--r);padding:2px 14px;margin-bottom:12px}
+.panel{background:var(--card);box-shadow:var(--shadow);border-radius:var(--r);padding:2px 14px;margin-bottom:12px}
 .panel h3{font-size:13px;color:var(--sub);font-weight:500;margin:12px 0 2px}
 .row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);gap:14px;font-size:15px}
 .row:last-child{border:0}
@@ -64,10 +76,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .note{white-space:pre-wrap;line-height:1.65;padding:12px 0;font-size:15px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}
 .chip{background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:6px 12px;font-size:13.5px;font:inherit;font-size:13.5px;cursor:pointer}
-.chip.on{background:rgba(255,92,138,.18);border-color:var(--accent);color:#ffb3c8}
+.chip.on{background:rgba(255,92,138,.18);border-color:var(--accent);color:var(--chip-on)}
 .btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:14px;border-radius:14px;border:0;font:inherit;font-weight:600;font-size:16px;background:var(--accent);color:#fff;margin-top:10px;cursor:pointer;text-decoration:none}
 .btn.ghost{background:var(--card2);color:var(--text)}
-.btn.danger{background:transparent;color:var(--danger);border:1px solid #4a2a2e}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger-line)}
 .btns{display:flex;gap:10px}.btns .btn{margin-top:0}
 .field{margin-bottom:12px}
 .field>label{display:block;font-size:13px;color:var(--sub);margin:0 0 6px 4px}
@@ -76,7 +88,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .unit{position:relative}.unit input{padding-right:38px}.unit span{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:13px;pointer-events:none}
 .stars-in{display:flex;gap:2px}
-.stars-in button{background:none;border:0;font-size:30px;line-height:1;color:#4a4352;padding:2px 3px;cursor:pointer}
+.stars-in button{background:none;border:0;font-size:30px;line-height:1;color:var(--star-off);padding:2px 3px;cursor:pointer}
 .stars-in button.on{color:var(--gold)}
 .srow{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
 .srow>span{color:var(--sub);font-size:14px}
@@ -84,14 +96,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .pick{display:flex;gap:8px}
 .pick button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--sub);border-radius:12px;padding:11px 0;font:inherit;font-size:15px;cursor:pointer}
 .pick button.on{border-color:var(--accent);color:var(--text);background:rgba(255,92,138,.14)}
-.meet{background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer}
+.meet{background:var(--card);box-shadow:var(--shadow);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer}
 .meet .h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .meet .d{font-weight:700;font-size:16px}
 .meet .p{color:var(--sub);font-size:13.5px;margin-top:3px}
-.meet .n{margin-top:8px;font-size:14.5px;line-height:1.6;white-space:pre-wrap;color:#ddd6e3}
+.meet .n{margin-top:8px;font-size:14.5px;line-height:1.6;white-space:pre-wrap;color:var(--muted)}
 .meet .no{font-size:12px;color:var(--sub);margin-right:6px}
 .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.photos div{aspect-ratio:1;background:#2a2531 center/cover;border-radius:8px;position:relative;cursor:pointer}
+.photos div{aspect-ratio:1;background:var(--ph) center/cover;border-radius:8px;position:relative;cursor:pointer}
 .photos div .tag{position:absolute;left:5px;bottom:5px;font-size:10.5px;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:6px}
 .photos div .star{position:absolute;right:5px;top:5px;font-size:12px;background:var(--accent);padding:1px 6px;border-radius:6px}
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -109,7 +121,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .viewer .vi{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;touch-action:pan-y}
 .viewer img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-select:none}
 .viewer .cnt{color:#bbb;font-size:14px}
-.toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#3a3442;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:80;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--toast);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:80;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .hint{font-size:13px;color:var(--sub);line-height:1.7}
 .hint ol{padding-left:20px;margin:6px 0}
@@ -186,7 +198,7 @@ document.addEventListener('click', e => {
     const w = b.parentElement; let v = +b.dataset.v; if(+w.dataset.val === v) v = 0;
     w.dataset.val = v; [...w.children].forEach((c, i) => c.classList.toggle('on', i < v)); return;
   }
-  const pk = e.target.closest('.pick button'); if(pk){
+  const pk = e.target.closest('.pick:not(.tpick) button'); if(pk){
     const wasOn = pk.classList.contains('on');
     $$('button', pk.parentElement).forEach(x => x.classList.remove('on'));
     if(!wasOn) pk.classList.add('on'); return;
@@ -234,7 +246,7 @@ async function renderList(){
   const photoById = {}; photos.forEach(p => { photoById[p.id] = p; if(!firstPhoto[p.personId] || p.createdAt < firstPhoto[p.personId].createdAt) firstPhoto[p.personId] = p; });
 
   app.innerHTML = `
-  <header class="top"><h1>💗 交友紀錄</h1>
+  <header class="top"><h1>💗 Record</h1>
     <a class="ib" href="#/settings" aria-label="設定">⚙︎</a>
     <a class="ib primary" href="#/new">＋ 新增</a></header>
   <div class="wrap">
@@ -380,7 +392,7 @@ const TABS = {
     const rows = [['暱稱', p.nickname], ['地點', p.location], ['認識日期', p.metDate && `${fmtDate(p.metDate)}（${daysAgo(p.metDate)}）`], ['年齡', p.age && p.age + ' 歲'],
       ['身高', p.height && p.height + ' cm'], ['體重', p.weight && p.weight + ' kg'], ['罩杯', p.cup], ['國籍', p.nationality]];
     $('#tab').innerHTML = `
-      <div class="panel">${rows.map(([k, v]) => `<div class="row"><span class="k">${k}</span><span class="v">${v ? esc(v) : '<span style="color:#5d5568">—</span>'}</span></div>`).join('')}</div>
+      <div class="panel">${rows.map(([k, v]) => `<div class="row"><span class="k">${k}</span><span class="v">${v ? esc(v) : '<span style="color:var(--ph-t)">—</span>'}</span></div>`).join('')}</div>
       <a class="btn ghost" href="#/p/${p.id}/edit">✎ 編輯基本資料</a>`;
   },
   review({ p }){
@@ -560,6 +572,10 @@ async function renderSettings(){
       <div class="row"><span class="k">安裝狀態</span><span class="v">${standalone ? '✅ 主畫面 App' : '瀏覽器模式'}</span></div>
     </div>
     <div class="hint" style="padding:0 4px">⚠️ 所有資料只存在這支手機的 App 裡，不會上傳任何伺服器。刪除 App 或清除 Safari 資料會全部消失，請定期「匯出備份」存到「檔案」App 或 iCloud。</div>
+    <div class="sec-t">外觀</div>
+    <div class="pick tpick" id="themePick">
+      ${[['auto', '跟隨系統'], ['light', '☀︎ 淺色'], ['dark', '☾ 深色']].map(([k, n]) => `<button type="button" data-v="${k}" class="${getTheme() === k ? 'on' : ''}">${n}</button>`).join('')}
+    </div>
     <div class="sec-t">備份</div>
     <button class="btn" id="exp">⬆︎ 匯出備份（含照片）</button>
     <button class="btn ghost" id="imp">⬇︎ 匯入備份</button>
@@ -569,8 +585,12 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">交友紀錄 v0.1</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v0.2</div>
   </div>`;
+  $$('#themePick button').forEach(b => b.onclick = () => {
+    setTheme(b.dataset.v);
+    $$('#themePick button').forEach(x => x.classList.toggle('on', x === b));
+  });
   $('#exp').onclick = exportAll;
   $('#imp').onclick = () => { $('#importIn').value = ''; $('#importIn').click(); };
   $('#wipe').onclick = async () => {
@@ -607,6 +627,19 @@ $('#importIn').onchange = async e => {
     toast('匯入完成'); location.hash = '#/'; route();
   } catch(err){ console.error(err); alert('匯入失敗：' + err.message); }
 };
+
+/* ---------- theme ---------- */
+function getTheme(){ try { return localStorage.getItem('theme') || 'auto'; } catch(e){ return 'auto'; } }
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(){
+  const t = getTheme();
+  if(t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  const dark = t === 'dark' || (t === 'auto' && darkMQ.matches);
+  $('#themeColor').content = dark ? '#121016' : '#f6f4f8';
+}
+function setTheme(t){ try { localStorage.setItem('theme', t); } catch(e){} applyTheme(); }
+darkMQ.addEventListener?.('change', applyTheme);
+applyTheme();
 
 /* ---------- boot ---------- */
 (async () => {
