@@ -425,7 +425,7 @@ const TABS = {
       ${meetings.length ? meetings.map((m, i) => `<div class="meet" data-id="${m.id}">
         <div class="h"><span class="d"><span class="no">#${meetings.length - i}</span>${fmtDate(m.date)}${m.time ? ' ' + esc(m.time) : ''}</span>
         <span class="p" style="margin:0">${m.cost ? '💰 $' + esc(Number(m.cost).toLocaleString()) : ''}</span></div>
-        ${mins(m) || m.times ? `<div class="p">${[mins(m) && '⏱ 鐘點 ' + esc(mins(m)) + ' 分鐘', m.times && '🔁 ' + esc(m.times) + ' 次'].filter(Boolean).join('　')}</div>` : ''}</div>`).join('')
+        ${mins(m) || m.times || m.noCondom ? `<div class="p">${[mins(m) && '⏱ 鐘點 ' + esc(mins(m)) + ' 分鐘', m.times && '🔁 ' + esc(m.times) + ' 次', m.noCondom && '<span style="color:var(--accent);font-weight:600">無套</span>'].filter(Boolean).join('　')}</div>` : ''}</div>`).join('')
       : `<div class="empty" style="padding-top:30px"><div class="big">☕️</div>還沒有見面紀錄</div>`}`;
     $('#addM').onclick = () => meetSheet(p, null);
     $$('.meet').forEach(el => el.onclick = () => meetSheet(p, meetings.find(m => m.id === el.dataset.id)));
@@ -488,13 +488,14 @@ function meetSheet(p, m){
       <div class="field"><label>鐘點</label><div class="unit"><input id="mmins" type="number" inputmode="numeric" step="1" min="0" value="${esc(mins(m))}"><span>分鐘</span></div></div>
       <div class="field"><label>次數</label><div class="unit"><input id="mtimes" type="number" inputmode="numeric" min="0" value="${esc(m.times)}"><span>次</span></div></div>
     </div>
+    <div class="checks"><label class="ck"><input type="checkbox" id="mnocondom" ${m.noCondom ? 'checked' : ''}><span>無套</span></label></div>
     <div class="field"><label>花費</label><div class="unit"><input id="mcost" type="number" inputmode="numeric" value="${esc(m.cost)}"><span>元</span></div></div>
     <button class="btn" id="saveM">儲存</button>
     ${isNew ? '' : '<button class="btn danger" id="delM">刪除這筆紀錄</button>'}`, s => {
     $('#saveM', s).onclick = async () => {
       const rec = { ...m, id: m.id || uid(), personId: p.id, createdAt: m.createdAt || Date.now(),
         date: $('#mdate', s).value || today(), time: $('#mtime', s).value,
-        minutes: $('#mmins', s).value, hours: undefined, times: $('#mtimes', s).value, cost: $('#mcost', s).value };
+        minutes: $('#mmins', s).value, hours: undefined, times: $('#mtimes', s).value, noCondom: $('#mnocondom', s).checked, cost: $('#mcost', s).value };
       await put('meetings', rec); closeSheet(); toast('已儲存'); curTab = 'meet'; refresh();
     };
     if(!isNew) $('#delM', s).onclick = async () => {
@@ -675,7 +676,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v15</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v16</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
