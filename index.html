@@ -584,7 +584,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v0.2</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v10</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
@@ -644,7 +644,16 @@ applyTheme();
 (async () => {
   try { db = await openDB(); } catch(e){ app.innerHTML = `<div class="empty">無法開啟資料庫：${esc(e.message)}<br>請確認不是在「私密瀏覽」模式。</div>`; return; }
   route();
-  if('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(console.warn);
+  if('serviceWorker' in navigator && location.protocol !== 'file:'){
+    // 有新版 service worker 接手時自動重新整理一次
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if(hadController && !reloaded){ reloaded = true; location.reload(); } });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      // App 從背景回到前景時檢查更新（iOS 主畫面 App 常常只是從背景喚醒，不會重新載入）
+      document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') reg.update().catch(() => {}); });
+    }).catch(console.warn);
+  }
 })();
 </script>
 </body>
