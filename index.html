@@ -419,18 +419,13 @@ const TABS = {
     $$('.meet').forEach(el => el.onclick = () => meetSheet(p, meetings.find(m => m.id === el.dataset.id)));
   },
   photo({ p, photos }){
-    const list = photoFilter === 'all' ? photos : photos.filter(x => (x.kind || 'photo') === photoFilter);
+    const list = photos;
     $('#tab').innerHTML = `
-      <div class="btns" style="margin-bottom:12px"><button class="btn" data-up="photo">📷 上傳照片</button><button class="btn ghost" data-up="shot">🖼 上傳截圖</button></div>
-      <div class="filter chips" style="padding:0 0 10px">
-        ${[['all', `全部 ${photos.length}`], ['photo', `照片 ${photos.filter(x => (x.kind || 'photo') === 'photo').length}`], ['shot', `截圖 ${photos.filter(x => x.kind === 'shot').length}`]]
-          .map(([k, n]) => `<button class="chip ${photoFilter === k ? 'on' : ''}" data-f="${k}">${n}</button>`).join('')}
-      </div>
+      <button class="btn" id="upP" style="margin:0 0 14px">📷 上傳照片</button>
       ${list.length ? `<div class="photos">${list.map((x, i) => `<div data-i="${i}" style="background-image:url(${objURL(x.thumb || x.blob)})">
-          ${x.kind === 'shot' ? '<span class="tag">截圖</span>' : ''}${x.id === p.coverId ? '<span class="star">封面</span>' : ''}</div>`).join('')}</div>`
-        : `<div class="empty" style="padding-top:30px"><div class="big">🖼</div>還沒有${photoFilter === 'shot' ? '截圖' : '照片'}</div>`}`;
-    $$('[data-up]').forEach(b => b.onclick = () => pickFiles(p, b.dataset.up));
-    $$('[data-f]').forEach(b => b.onclick = () => { photoFilter = b.dataset.f; TABS.photo({ p, photos }); });
+          ${x.id === p.coverId ? '<span class="star">封面</span>' : ''}</div>`).join('')}</div>`
+        : `<div class="empty" style="padding-top:30px"><div class="big">🖼</div>還沒有照片</div>`}`;
+    $('#upP').onclick = () => pickFiles(p, 'photo');
     $$('.photos div').forEach(el => el.onclick = () => openViewer(p, list, +el.dataset.i));
   }
 };
