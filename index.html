@@ -39,7 +39,23 @@ a{color:inherit}
 .wrap{padding:14px 16px calc(40px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
 input,select,textarea{font:inherit;font-size:16px;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;width:100%;outline:none;-webkit-appearance:none;appearance:none}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--sub) 50%),linear-gradient(135deg,var(--sub) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
-input[type=date]{min-height:46px}
+.datebtn{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:46px;text-align:left;font:inherit;font-size:16px;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;cursor:pointer}
+.datebtn.empty{color:var(--ph-t)}
+.datebtn svg{color:var(--sub);flex-shrink:0}
+.cal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55;display:none}
+.cal-bg.open{display:block}
+.cal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,340px);background:var(--card);border-radius:20px;padding:14px;z-index:56;display:none;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.cal.open{display:block}
+.cal .ch{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.cal .ch select{flex:1;width:auto;padding:8px 24px 8px 8px;font-weight:600;text-align:center;text-align-last:center;background-position:calc(100% - 12px) 50%,calc(100% - 7px) 50%;background-color:var(--card2);border-color:transparent}
+.cal .ch .ib{width:38px;font-size:20px;padding:0}
+.cal .wd,.cal .days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal .wd span{font-size:12px;color:var(--sub);padding:4px 0 6px}
+.cal .days button{aspect-ratio:1;border:0;background:none;border-radius:50%;font:inherit;font-size:15px;color:var(--text);cursor:pointer;padding:0}
+.cal .days button.today{color:var(--accent);font-weight:700}
+.cal .days button.sel{background:var(--accent);color:#fff;font-weight:700}
+.cal .cf{display:flex;gap:8px;margin-top:10px}
+.cal .cf .btn{margin:0;padding:11px;font-size:15px}
 textarea{min-height:96px;resize:vertical}
 input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .search{display:flex;gap:8px;margin-bottom:14px}
@@ -158,6 +174,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 <div class="sheet-bg" id="sheetBg"></div>
 <div class="sheet" id="sheet"></div>
 <div class="viewer" id="viewer"></div>
+<div class="cal-bg" id="calBg"></div>
+<div class="cal" id="cal"></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="fileIn" accept="image/*" multiple hidden>
 <input type="file" id="importIn" accept="application/json,.json" hidden>
@@ -243,12 +261,54 @@ function openSheet(title, html, mount){
 function closeSheet(){ $('#sheet').classList.remove('open'); $('#sheetBg').classList.remove('open'); }
 $('#sheetBg').onclick = closeSheet;
 
+/* ---------- date picker（自訂月曆，避開 iOS 原生選擇器切換月份後自動關閉的問題） ---------- */
+const pad2 = n => String(n).padStart(2, '0');
+const CAL_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+// 產生日期欄位：隱藏 input 存 YYYY-MM-DD，按鈕顯示並開啟月曆
+const dateField = (name, val, id) => `<div class="datef"><input type="hidden" ${name ? `name="${name}"` : ''} ${id ? `id="${id}"` : ''} value="${esc(val || '')}"><button type="button" class="datebtn ${val ? '' : 'empty'}"><span>${val ? fmtDate(val) : '選擇日期'}</span>${CAL_ICON}</button></div>`;
+function openCal(inp, btn){
+  const cal = $('#cal'), bg = $('#calBg');
+  const t = today();
+  const valid = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '');
+  let [y, m] = (valid(inp.value) ? inp.value : t).split('-').map(Number);
+  const pick = iso => { inp.value = iso; $('span', btn).textContent = iso ? fmtDate(iso) : '選擇日期'; btn.classList.toggle('empty', !iso); closeCal(); };
+  const draw = () => {
+    const first = new Date(y, m - 1, 1).getDay(), dim = new Date(y, m, 0).getDate();
+    const ty = +t.slice(0, 4), years = [];
+    for(let i = Math.max(ty + 1, y); i >= Math.min(1970, y); i--) years.push(i);
+    cal.innerHTML = `
+      <div class="ch"><button type="button" class="ib" id="cPrev" aria-label="上個月">‹</button>
+        <select id="cY">${years.map(i => `<option value="${i}" ${i === y ? 'selected' : ''}>${i} 年</option>`).join('')}</select>
+        <select id="cM">${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}" ${i + 1 === m ? 'selected' : ''}>${i + 1} 月</option>`).join('')}</select>
+        <button type="button" class="ib" id="cNext" aria-label="下個月">›</button></div>
+      <div class="wd">${['日', '一', '二', '三', '四', '五', '六'].map(d => `<span>${d}</span>`).join('')}</div>
+      <div class="days">${'<span></span>'.repeat(first)}${Array.from({ length: dim }, (_, i) => {
+        const iso = `${y}-${pad2(m)}-${pad2(i + 1)}`;
+        return `<button type="button" data-d="${iso}" class="${iso === inp.value ? 'sel' : ''} ${iso === t ? 'today' : ''}">${i + 1}</button>`; }).join('')}</div>
+      <div class="cf"><button type="button" class="btn ghost" id="cToday">今天</button><button type="button" class="btn ghost" id="cClear">清除</button></div>`;
+    $('#cPrev', cal).onclick = () => { if(--m < 1){ m = 12; y--; } draw(); };
+    $('#cNext', cal).onclick = () => { if(++m > 12){ m = 1; y++; } draw(); };
+    $('#cY', cal).onchange = e => { y = +e.target.value; draw(); };
+    $('#cM', cal).onchange = e => { m = +e.target.value; draw(); };
+    $$('.days button', cal).forEach(b => b.onclick = () => pick(b.dataset.d));
+    $('#cToday', cal).onclick = () => pick(t);
+    $('#cClear', cal).onclick = () => pick('');
+  };
+  draw();
+  cal.classList.add('open'); bg.classList.add('open');
+}
+function closeCal(){ $('#cal').classList.remove('open'); $('#calBg').classList.remove('open'); }
+$('#calBg').onclick = closeCal;
+document.addEventListener('click', e => {
+  const b = e.target.closest('.datebtn'); if(b) openCal(b.previousElementSibling, b);
+});
+
 /* ---------- router ---------- */
 let lastHash = '';
 async function route(){
   const h = location.hash.slice(1) || '/';
   const parts = h.split('/').filter(Boolean);
-  closeSheet(); closeViewer();
+  closeSheet(); closeViewer(); closeCal();
   if(h !== lastHash) window.scrollTo(0, 0);
   lastHash = h;
   freeURLs();
@@ -381,7 +441,7 @@ async function renderForm(id){
     <div class="field"><label>暱稱 <em>*</em></label><input name="nickname" required value="${esc(p.nickname)}" placeholder="例如：小美"></div>
     <div class="two">
       <div class="field"><label>地點</label><input name="location" value="${esc(p.location)}" placeholder="台北 / 信義區"></div>
-      <div class="field"><label>日期</label><input type="date" name="metDate" value="${esc(p.metDate)}"></div>
+      <div class="field"><label>日期</label>${dateField('metDate', p.metDate)}</div>
     </div>
     <div class="two">
       <div class="field"><label>年齡</label><div class="unit"><input name="age" type="number" inputmode="numeric" value="${esc(p.age)}"><span>歲</span></div></div>
@@ -549,7 +609,7 @@ function meetSheet(p, m){
   const isNew = !m; m = m || { date: today() };
   openSheet(isNew ? '新增見面' : '編輯見面', `
     <div class="two">
-      <div class="field"><label>日期</label><input type="date" id="mdate" value="${esc(m.date)}"></div>
+      <div class="field"><label>日期</label>${dateField(null, m.date, 'mdate')}</div>
       <div class="field"><label>時間</label><input type="time" id="mtime" value="${esc(m.time)}"></div>
     </div>
     <div class="two">
@@ -744,7 +804,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v20</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v21</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);

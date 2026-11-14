@@ -1,5 +1,5 @@
 // 改版時把版本號 +1，手機就會更新快取
-const CACHE = 'datelog-v20';
+const CACHE = 'datelog-v21';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
