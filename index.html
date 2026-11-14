@@ -134,6 +134,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .hint ol{padding-left:20px;margin:6px 0}
 .sec-t{font-size:13px;color:var(--sub);margin:18px 4px 8px}
 .filter{display:flex;gap:6px;margin-bottom:10px}
+.seg.home{margin:0 0 14px}
+.mh{display:flex;justify-content:space-between;align-items:baseline;margin:18px 4px 8px;font-size:13px;color:var(--sub)}
+.mh b{font-size:16px;color:var(--text)}
+.mrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
+.mrow:last-child{border:0}
+.mrow .dt{width:50px;flex-shrink:0;text-align:center;line-height:1.3}
+.mrow .dt b{display:block;font-size:17px}
+.mrow .dt span{font-size:11.5px;color:var(--sub)}
+.mrow .who{flex:1;min-width:0}
+.mrow .who b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .who span{font-size:12.5px;color:var(--sub)}
+.mrow .amt{font-weight:700;font-size:15px;flex-shrink:0;white-space:nowrap}
+.mrow .amt.none{color:var(--ph-t);font-weight:400}
 </style>
 </head>
 <body>
@@ -245,7 +258,7 @@ async function route(){
 window.addEventListener('hashchange', route);
 
 /* ---------- list ---------- */
-const listState = { q: '', sort: 'recent' };
+const listState = { q: '', sort: 'recent', tab: 'people' };
 async function renderList(){
   const [people, meetings, photos] = await Promise.all([getAll('people'), getAll('meetings'), getAll('photos')]);
   const last = {}, cnt = {}, firstPhoto = {};
@@ -257,6 +270,13 @@ async function renderList(){
     <a class="ib gear" href="#/settings" aria-label="設定"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
     <a class="ib primary" href="#/new">＋ 新增</a></header>
   <div class="wrap">
+    <div class="seg home" id="hseg"><button data-t="people">對象</button><button data-t="cost">花費</button></div>
+    <div id="home"></div>
+  </div>`;
+  const home = $('#home');
+
+  const drawPeople = () => {
+    home.innerHTML = `
     <div class="stats">
       <div><b>${people.length}</b><span>人數</span></div>
     </div>
@@ -267,9 +287,12 @@ async function renderList(){
         <option value="created">最新新增</option><option value="name">暱稱</option>
       </select>
     </div>
-    <div class="grid" id="grid"></div>
-  </div>`;
-  $('#sort').value = listState.sort;
+    <div class="grid" id="grid"></div>`;
+    $('#sort').value = listState.sort;
+    draw();
+    $('#q').oninput = e => { listState.q = e.target.value; draw(); };
+    $('#sort').onchange = e => { listState.sort = e.target.value; draw(); };
+  };
 
   const draw = () => {
     const q = listState.q.trim().toLowerCase();
@@ -295,9 +318,39 @@ async function renderList(){
         </div></a>`;
     }).join('');
   };
-  draw();
-  $('#q').oninput = e => { listState.q = e.target.value; draw(); };
-  $('#sort').onchange = e => { listState.sort = e.target.value; draw(); };
+
+  // 花費分頁：依月份分組，列出對象、時間、鐘點、次數與金額
+  const money = n => '$' + Math.round(n).toLocaleString();
+  const drawCost = () => {
+    const name = {}; people.forEach(p => name[p.id] = p.nickname);
+    const ms = meetings.filter(m => m.date).sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt);
+    if(!ms.length){ home.innerHTML = `<div class="empty"><div class="big">💰</div>還沒有見面紀錄<br>在對象頁的「見面」分頁新增後，花費會依月份整理在這裡</div>`; return; }
+    const groups = {}; ms.forEach(m => { const k = m.date.slice(0, 7); (groups[k] = groups[k] || []).push(m); });
+    const total = ms.reduce((t, m) => t + (+m.cost || 0), 0);
+    home.innerHTML = `
+    <div class="stats">
+      <div><b>${money(total)}</b><span>總花費</span></div>
+      <div><b>${ms.length}</b><span>見面次數</span></div>
+      <div><b>${Object.keys(groups).length}</b><span>月份</span></div>
+    </div>
+    ${Object.keys(groups).sort().reverse().map(k => {
+      const arr = groups[k], sum = arr.reduce((t, m) => t + (+m.cost || 0), 0);
+      const [y, mo] = k.split('-');
+      return `<div class="mh"><b>${+y} 年 ${+mo} 月</b><span>${arr.length} 次 · ${money(sum)}</span></div>
+      <div class="panel" style="padding:2px 14px">${arr.map(m => `<a class="mrow" href="#/p/${m.personId}">
+        <div class="dt"><b>${+m.date.slice(8)}日</b><span>${esc(m.time) || '—'}</span></div>
+        <div class="who"><b>${esc(name[m.personId] || '（已刪除）')}</b><span>${[mins(m) && '⏱ ' + esc(mins(m)) + ' 分鐘', m.times && '🔁 ' + esc(m.times) + ' 次'].filter(Boolean).join('　') || '&nbsp;'}</span></div>
+        <div class="amt ${m.cost ? '' : 'none'}">${m.cost ? money(+m.cost) : '—'}</div></a>`).join('')}</div>`;
+    }).join('')}`;
+  };
+
+  const showHome = t => {
+    listState.tab = t;
+    $$('#hseg button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+    t === 'cost' ? drawCost() : drawPeople();
+  };
+  $$('#hseg button').forEach(b => b.onclick = () => showHome(b.dataset.t));
+  showHome(listState.tab);
 }
 
 /* ---------- person form ---------- */
@@ -676,7 +729,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v17</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v18</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
