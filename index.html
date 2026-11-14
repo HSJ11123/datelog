@@ -135,8 +135,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .sec-t{font-size:13px;color:var(--sub);margin:18px 4px 8px}
 .filter{display:flex;gap:6px;margin-bottom:10px}
 .seg.home{margin:0 0 14px}
-.mh{display:flex;justify-content:space-between;align-items:baseline;margin:18px 4px 8px;font-size:13px;color:var(--sub)}
-.mh b{font-size:16px;color:var(--text)}
+.mpick{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+.mpick select{flex:1;text-align:center;text-align-last:center;font-weight:600;padding-right:12px;background-image:none}
+.mpick .ib{font-size:22px;padding:0 10px;height:46px;min-width:46px}
+.ib:disabled{opacity:.3;cursor:default}
+.stats b small{font-size:12px;font-weight:400;color:var(--sub);margin-left:2px}
 .mrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
 .mrow:last-child{border:0}
 .mrow .dt{width:50px;flex-shrink:0;text-align:center;line-height:1.3}
@@ -258,7 +261,7 @@ async function route(){
 window.addEventListener('hashchange', route);
 
 /* ---------- list ---------- */
-const listState = { q: '', sort: 'recent', tab: 'people' };
+const listState = { q: '', sort: 'recent', tab: 'people', month: '' };
 async function renderList(){
   const [people, meetings, photos] = await Promise.all([getAll('people'), getAll('meetings'), getAll('photos')]);
   const last = {}, cnt = {}, firstPhoto = {};
@@ -319,29 +322,40 @@ async function renderList(){
     }).join('');
   };
 
-  // 花費分頁：依月份分組，列出對象、時間、鐘點、次數與金額
+  // 花費分頁：選擇月份，顯示該月的統計與每次見面的對象、時間、鐘點、次數與金額
   const money = n => '$' + Math.round(n).toLocaleString();
+  const monthLabel = k => { const [y, mo] = k.split('-'); return `${+y} 年 ${+mo} 月`; };
   const drawCost = () => {
     const name = {}; people.forEach(p => name[p.id] = p.nickname);
     const ms = meetings.filter(m => m.date).sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt);
-    if(!ms.length){ home.innerHTML = `<div class="empty"><div class="big">💰</div>還沒有見面紀錄<br>在對象頁的「見面」分頁新增後，花費會依月份整理在這裡</div>`; return; }
     const groups = {}; ms.forEach(m => { const k = m.date.slice(0, 7); (groups[k] = groups[k] || []).push(m); });
+    // 可選月份：有紀錄的月份 + 本月，新到舊
+    const months = [...new Set([today().slice(0, 7), ...Object.keys(groups)])].sort().reverse();
+    if(!months.includes(listState.month)) listState.month = months.find(k => groups[k]) || months[0];
+    const k = listState.month, arr = groups[k] || [], idx = months.indexOf(k);
+    const sum = arr.reduce((t, m) => t + (+m.cost || 0), 0);
+    const tmin = arr.reduce((t, m) => t + (+mins(m) || 0), 0);
     const total = ms.reduce((t, m) => t + (+m.cost || 0), 0);
     home.innerHTML = `
-    <div class="stats">
-      <div><b>${money(total)}</b><span>總花費</span></div>
-      <div><b>${ms.length}</b><span>見面次數</span></div>
-      <div><b>${Object.keys(groups).length}</b><span>月份</span></div>
+    <div class="mpick">
+      <button type="button" class="ib" id="mPrev" ${idx >= months.length - 1 ? 'disabled' : ''} aria-label="上個月">‹</button>
+      <select id="mSel">${months.map(x => `<option value="${x}" ${x === k ? 'selected' : ''}>${monthLabel(x)}${groups[x] ? `（${groups[x].length} 次）` : ''}</option>`).join('')}</select>
+      <button type="button" class="ib" id="mNext" ${idx <= 0 ? 'disabled' : ''} aria-label="下個月">›</button>
     </div>
-    ${Object.keys(groups).sort().reverse().map(k => {
-      const arr = groups[k], sum = arr.reduce((t, m) => t + (+m.cost || 0), 0);
-      const [y, mo] = k.split('-');
-      return `<div class="mh"><b>${+y} 年 ${+mo} 月</b><span>${arr.length} 次 · ${money(sum)}</span></div>
-      <div class="panel" style="padding:2px 14px">${arr.map(m => `<a class="mrow" href="#/p/${m.personId}">
+    <div class="stats">
+      <div><b>${money(sum)}</b><span>本月花費</span></div>
+      <div><b>${arr.length}</b><span>見面次數</span></div>
+      <div><b>${tmin ? tmin + '<small>分</small>' : '—'}</b><span>鐘點合計</span></div>
+    </div>
+    ${arr.length ? `<div class="panel" style="padding:2px 14px">${arr.map(m => `<a class="mrow" href="#/p/${m.personId}">
         <div class="dt"><b>${+m.date.slice(8)}日</b><span>${esc(m.time) || '—'}</span></div>
         <div class="who"><b>${esc(name[m.personId] || '（已刪除）')}</b><span>${[mins(m) && '⏱ ' + esc(mins(m)) + ' 分鐘', m.times && '🔁 ' + esc(m.times) + ' 次'].filter(Boolean).join('　') || '&nbsp;'}</span></div>
-        <div class="amt ${m.cost ? '' : 'none'}">${m.cost ? money(+m.cost) : '—'}</div></a>`).join('')}</div>`;
-    }).join('')}`;
+        <div class="amt ${m.cost ? '' : 'none'}">${m.cost ? money(+m.cost) : '—'}</div></a>`).join('')}</div>`
+      : `<div class="empty" style="padding:50px 20px"><div class="big">💰</div>${monthLabel(k)}沒有見面紀錄</div>`}
+    <div class="hint" style="text-align:center;margin-top:18px">全部累計 ${money(total)} · ${ms.length} 次</div>`;
+    $('#mSel').onchange = e => { listState.month = e.target.value; drawCost(); };
+    $('#mPrev').onclick = () => { listState.month = months[idx + 1]; drawCost(); };
+    $('#mNext').onclick = () => { listState.month = months[idx - 1]; drawCost(); };
   };
 
   const showHome = t => {
@@ -729,7 +743,7 @@ async function renderSettings(){
       <li>選「<b>加入主畫面</b>」→ 新增</li><li>之後從主畫面圖示開啟即可全螢幕、離線使用</li></ol></div>`}
     <div class="sec-t">危險區</div>
     <button class="btn danger" id="wipe">清除全部資料</button>
-    <div class="hint" style="text-align:center;margin-top:24px">Record v18</div>
+    <div class="hint" style="text-align:center;margin-top:24px">Record v19</div>
   </div>`;
   $$('#themePick button').forEach(b => b.onclick = () => {
     setTheme(b.dataset.v);
